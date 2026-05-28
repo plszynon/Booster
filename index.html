@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+<meta name="theme-color" content="#060b14"/>
+<title>Game Boost PRO</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--neon:#00ffe7;--neon2:#ff006e;--bg:#060b14;--card:#0d1828;--text:#c8e0f4;--dim:#4a6a8a}
+body{background:var(--bg);font-family:'Rajdhani',sans-serif;color:var(--text);max-width:430px;margin:0 auto;min-height:100vh;overflow-x:hidden}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+@keyframes scanline{0%{top:-5%}100%{top:105%}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes ripple{0%{transform:translate(-50%,-50%) scale(.8);opacity:1}100%{transform:translate(-50%,-50%) scale(2.8);opacity:0}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+#scanline{position:fixed;left:0;right:0;height:3px;background:linear-gradient(transparent,#00ffe720,transparent);pointer-events:none;z-index:999;animation:scanline 4s linear infinite}
+#gridbg{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(0,255,231,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,231,.04) 1px,transparent 1px);background-size:32px 32px}
+#app{position:relative;z-index:5;display:flex;flex-direction:column;min-height:100vh}
+/* Header */
+#header{background:linear-gradient(135deg,#0d1828,#111e30);border-bottom:1px solid #00ffe722;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+#logo{font-family:'Orbitron',sans-serif;font-weight:900;font-size:18px;color:var(--neon);letter-spacing:3px;text-shadow:0 0 20px var(--neon)}
+#sublogo{font-size:10px;color:var(--dim);letter-spacing:2px}
+#badge{border-radius:20px;padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:2px;font-family:'Orbitron',sans-serif;transition:all .3s}
+/* Tabs */
+#tabs{display:flex;background:#0a1520;border-bottom:1px solid #1a2a3a;position:sticky;top:62px;z-index:99}
+.tab{flex:1;padding:12px 0;border:none;background:transparent;color:var(--dim);font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:1px;font-weight:700;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s}
+.tab.active{background:#0d1828;color:var(--neon);border-bottom:2px solid var(--neon);text-shadow:0 0 10px var(--neon)}
+/* Content */
+#content{flex:1;padding:16px 14px;animation:fadeUp .3s ease}
+.card{background:var(--card);border-radius:14px;border:1px solid #1a2a3a;padding:18px;margin-bottom:14px}
+.section-label{color:var(--dim);font-size:11px;letter-spacing:2px;margin-bottom:12px}
+/* Gauges */
+#gauges{display:flex;justify-content:space-around;align-items:center}
+.gauge-wrap{display:flex;flex-direction:column;align-items:center;gap:4px}
+.gauge-label{color:var(--dim);font-family:'Rajdhani',sans-serif;font-size:11px;letter-spacing:2px}
+/* Quick bar */
+#quickbar{display:flex;justify-content:space-between;align-items:center;padding:12px 16px}
+.qb-item{text-align:center;flex:1}
+.qb-val{font-family:'Orbitron',sans-serif;font-size:15px;font-weight:700}
+.qb-label{font-size:10px;color:var(--dim);letter-spacing:1px;margin-top:2px}
+.qb-divider{width:1px;height:36px;background:#1a2a3a}
+/* Boost button */
+#boost-wrap{display:flex;justify-content:center;margin:20px 0;position:relative}
+#boost-btn{width:140px;height:140px;border-radius:50%;border:3px solid var(--neon2);background:radial-gradient(circle,#ff006e22,#060b14);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;transition:all .3s;-webkit-tap-highlight-color:transparent}
+#boost-btn.active{border-color:var(--neon);background:radial-gradient(circle,#00ffe722,#060b14);box-shadow:0 0 40px #00ffe755,inset 0 0 30px #00ffe722}
+#boost-btn.boosting{animation:pulse 1s infinite;border-color:var(--neon2);box-shadow:0 0 40px #ff006e55}
+#boost-btn:not(.active):not(.boosting){box-shadow:0 0 40px #ff006e55,inset 0 0 30px #ff006e22}
+#boost-icon{font-size:36px}
+#boost-text{font-family:'Orbitron',sans-serif;font-weight:900;font-size:11px;letter-spacing:2px;color:var(--neon2)}
+#boost-btn.active #boost-text{color:var(--neon)}
+#ripple{position:absolute;width:120px;height:120px;border-radius:50%;border:3px solid var(--neon);top:50%;left:50%;animation:ripple .8s ease-out forwards;pointer-events:none;display:none}
+/* Progress */
+#progress-wrap{margin-bottom:14px;display:none}
+.prog-header{display:flex;justify-content:space-between;margin-bottom:5px;font-size:12px}
+.prog-label{color:var(--dim);letter-spacing:1px}
+#prog-pct{color:var(--neon);font-weight:700;font-family:'Orbitron',sans-serif;font-size:11px}
+#prog-bar-bg{background:#1a2a3a;border-radius:6px;height:8px;overflow:hidden}
+#prog-bar{height:100%;width:0%;background:linear-gradient(90deg,#00ffe744,#00ffe7);border-radius:6px;box-shadow:0 0 12px var(--neon);transition:width .1s linear}
+/* Log */
+#log-box{background:#080f1a;border:1px solid #1a2a3a;border-radius:10px;padding:12px;max-height:120px;overflow-y:auto;display:none}
+.log-entry{font-size:11px;padding:2px 0;border-bottom:1px solid #1a2a3a22;display:flex;gap:8px;font-family:'Rajdhani',sans-serif}
+.log-time{color:#2a3a4a;min-width:58px}
+.log-msg{color:var(--dim)}
+.log-entry:first-child .log-msg{color:var(--neon)}
+/* Stat bars */
+.statbar{margin-bottom:12px}
+.sb-header{display:flex;justify-content:space-between;margin-bottom:5px;font-family:'Rajdhani',sans-serif;font-weight:600}
+.sb-bg{background:#1a2a3a;border-radius:4px;height:6px;overflow:hidden}
+.sb-fill{height:100%;border-radius:4px;transition:width 1.2s cubic-bezier(0.4,0,0.2,1)}
+/* IP card */
+#ip-display{font-family:'Orbitron',sans-serif;font-size:24px;font-weight:900;color:var(--neon);letter-spacing:3px;margin-bottom:6px;text-shadow:0 0 20px var(--neon)}
+#ip-location{font-size:12px;color:var(--dim)}
+/* Info rows */
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #1a2a3a44;font-size:13px}
+.ir-label{color:var(--dim);letter-spacing:1px}
+.ir-val{font-weight:700;font-family:'Orbitron',sans-serif;font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+/* Battery bar */
+#bat-bar-bg{background:#1a2a3a;border-radius:6px;height:10px;overflow:hidden;margin:8px 0 14px}
+#bat-bar{height:100%;border-radius:6px;transition:width 1s ease}
+/* Grid stats */
+#stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.stat-box{background:var(--card);border:1px solid #1a2a3a;border-radius:12px;padding:16px}
+.stat-box-icon{font-size:22px;margin-bottom:6px}
+.stat-box-val{font-family:'Orbitron',sans-serif;font-size:16px;font-weight:700}
+.stat-box-label{font-size:10px;color:var(--dim);letter-spacing:1px;margin-top:2px}
+/* Device info */
+.dev-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1a2a3a22;font-size:12px}
+.dev-key{color:var(--dim)}
+.dev-val{color:var(--text);font-weight:600}
+/* Bottom bar */
+#bottombar{background:#08111a;border-top:1px solid #1a2a3a;padding:10px 20px;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--dim);position:sticky;bottom:0;z-index:100}
+#bb-bat{font-weight:600}
+#bb-brand{font-family:'Orbitron',sans-serif;color:#00ffe788;font-size:10px}
+#bb-net{font-weight:600}
+/* Panels */
+.panel{display:none}
+.panel.active{display:block;animation:fadeUp .3s ease}
+/* loading blink */
+.loading{animation:blink 1s infinite;color:#2a4a6a !important;font-family:'Orbitron',sans-serif;font-size:10px}
+</style>
+</head>
+<body>
+<div id="scanline"></div>
+<div id="gridbg"></div>
+<div id="app">
+
+<!-- HEADER -->
+<div id="header">
+  <div>
+    <div id="logo">⚡ GAME BOOST</div>
+    <div id="sublogo">PRO OPTIMIZER v2.5</div>
+  </div>
+  <div id="badge">STANDBY</div>
+</div>
+
+<!-- TABS -->
+<div id="tabs">
+  <button class="tab active" onclick="switchTab('boost')">⚡ BOOST</button>
+  <button class="tab" onclick="switchTab('network')">📡 SIEĆ</button>
+  <button class="tab" onclick="switchTab('monitor')">📊 MONITOR</button>
+</div>
+
+<!-- CONTENT -->
+<div id="content">
+
+  <!-- BOOST PANEL -->
+  <div id="panel-boost" class="panel active">
+    <!-- Gauges -->
+    <div class="card">
+      <div id="gauges">
+        <div class="gauge-wrap"><svg id="svg-ram" width="78" height="78"></svg><span class="gauge-label">RAM</span></div>
+        <div class="gauge-wrap"><svg id="svg-cpu" width="78" height="78"></svg><span class="gauge-label">CPU</span></div>
+        <div class="gauge-wrap"><svg id="svg-temp" width="78" height="78"></svg><span class="gauge-label">TEMP</span></div>
+        <div class="gauge-wrap"><svg id="svg-fps" width="78" height="78"></svg><span class="gauge-label">FPS</span></div>
+      </div>
+    </div>
+    <!-- Quick bar -->
+    <div class="card" style="padding:0">
+      <div id="quickbar">
+        <div class="qb-item">
+          <div class="qb-val" id="qb-bat">—</div>
+          <div class="qb-label" id="qb-bat-lbl">BATERIA</div>
+        </div>
+        <div class="qb-divider"></div>
+        <div class="qb-item">
+          <div class="qb-val" id="qb-net" style="color:var(--dim)">—</div>
+          <div class="qb-label">SIEĆ</div>
+        </div>
+        <div class="qb-divider"></div>
+        <div class="qb-item">
+          <div class="qb-val loading" id="qb-ip" style="font-size:12px">…</div>
+          <div class="qb-label">PUBLICZNE IP</div>
+        </div>
+      </div>
+    </div>
+    <!-- Boost button -->
+    <div id="boost-wrap">
+      <div id="ripple"></div>
+      <button id="boost-btn" onclick="handleBoost()">
+        <div id="boost-icon">⚡</div>
+        <div id="boost-text">BOOST!</div>
+      </button>
+    </div>
+    <!-- Progress -->
+    <div id="progress-wrap">
+      <div class="prog-header">
+        <span class="prog-label">POSTĘP OPTYMALIZACJI</span>
+        <span id="prog-pct">0%</span>
+      </div>
+      <div id="prog-bar-bg"><div id="prog-bar"></div></div>
+    </div>
+    <!-- Log -->
+    <div id="log-box"></div>
+  </div>
+
+  <!-- NETWORK PANEL -->
+  <div id="panel-network" class="panel">
+    <div class="card">
+      <div class="section-label">📡 TWOJE PUBLICZNE IP</div>
+      <div id="ip-display" class="loading">POBIERANIE…</div>
+      <div id="ip-location">—</div>
+    </div>
+    <div class="card" style="padding:6px 18px">
+      <div class="info-row"><span class="ir-label">ADRES IP</span><span class="ir-val loading" id="ir-ip">…</span></div>
+      <div class="info-row"><span class="ir-label">MIASTO</span><span class="ir-val" id="ir-city">—</span></div>
+      <div class="info-row"><span class="ir-label">KRAJ</span><span class="ir-val" id="ir-country">—</span></div>
+      <div class="info-row"><span class="ir-label">ISP</span><span class="ir-val" id="ir-isp">—</span></div>
+      <div class="info-row"><span class="ir-label">STREFA CZAS.</span><span class="ir-val" id="ir-tz">—</span></div>
+      <div class="info-row"><span class="ir-label">ASN</span><span class="ir-val" id="ir-asn">—</span></div>
+    </div>
+    <div class="card" style="padding:6px 18px">
+      <div class="section-label" style="padding-top:8px">📶 POŁĄCZENIE</div>
+      <div class="info-row"><span class="ir-label">TYP SIECI</span><span class="ir-val" id="ir-nettype" style="color:var(--dim)">—</span></div>
+      <div class="info-row"><span class="ir-label">POBIERANIE</span><span class="ir-val" id="ir-dl" style="color:var(--neon)">—</span></div>
+      <div class="info-row"><span class="ir-label">RTT / PING</span><span class="ir-val" id="ir-rtt">—</span></div>
+      <div class="info-row"><span class="ir-label">OSZCZ. DANYCH</span><span class="ir-val" id="ir-save">—</span></div>
+    </div>
+    <div class="card" style="padding:6px 18px">
+      <div class="section-label" style="padding-top:8px">🔋 BATERIA</div>
+      <div class="info-row"><span class="ir-label">POZIOM</span><span class="ir-val" id="ir-batlvl">—</span></div>
+      <div class="info-row"><span class="ir-label">STATUS</span><span class="ir-val" id="ir-batsta">—</span></div>
+      <div id="bat-bar-bg" style="display:none"><div id="bat-bar"></div></div>
+    </div>
+  </div>
+
+  <!-- MONITOR PANEL -->
+  <div id="panel-monitor" class="panel">
+    <div class="card">
+      <div class="section-label">ZUŻYCIE ZASOBÓW</div>
+      <div class="statbar">
+        <div class="sb-header"><span>💾 RAM</span><span id="sb-ram-val" style="color:#00ffe7">67%</span></div>
+        <div class="sb-bg"><div class="sb-fill" id="sb-ram" style="width:67%;background:linear-gradient(90deg,#00ffe788,#00ffe7);box-shadow:0 0 8px #00ffe7"></div></div>
+      </div>
+      <div class="statbar">
+        <div class="sb-header"><span>⚙️ CPU</span><span id="sb-cpu-val" style="color:#ff006e">72%</span></div>
+        <div class="sb-bg"><div class="sb-fill" id="sb-cpu" style="width:72%;background:linear-gradient(90deg,#ff006e88,#ff006e);box-shadow:0 0 8px #ff006e"></div></div>
+      </div>
+      <div class="statbar">
+        <div class="sb-header"><span>🎮 GPU</span><span id="sb-gpu-val" style="color:#a855f7">58%</span></div>
+        <div class="sb-bg"><div class="sb-fill" id="sb-gpu" style="width:58%;background:linear-gradient(90deg,#a855f788,#a855f7);box-shadow:0 0 8px #a855f7"></div></div>
+      </div>
+      <div class="statbar">
+        <div class="sb-header"><span>🌡️ TEMP</span><span id="sb-temp-val" style="color:#ffaa00">54%</span></div>
+        <div class="sb-bg"><div class="sb-fill" id="sb-temp" style="width:54%;background:linear-gradient(90deg,#ffaa0088,#ffaa00);box-shadow:0 0 8px #ffaa00"></div></div>
+      </div>
+    </div>
+    <div id="stat-grid">
+      <div class="stat-box"><div class="stat-box-icon">💾</div><div class="stat-box-val" id="sg-ram" style="color:var(--neon);text-shadow:0 0 10px var(--neon)">0 MB</div><div class="stat-box-label">ZWOLNIONA RAM</div></div>
+      <div class="stat-box"><div class="stat-box-icon">🚀</div><div class="stat-box-val" id="sg-fps" style="color:#a855f7;text-shadow:0 0 10px #a855f7">+0 FPS</div><div class="stat-box-label">FPS BOOST</div></div>
+      <div class="stat-box"><div class="stat-box-icon">❌</div><div class="stat-box-val" id="sg-proc" style="color:var(--neon2);text-shadow:0 0 10px var(--neon2)">0</div><div class="stat-box-label">PROC. ZAMKN.</div></div>
+      <div class="stat-box"><div class="stat-box-icon">📡</div><div class="stat-box-val" id="sg-ping" style="color:#ffaa00;text-shadow:0 0 10px #ffaa00">0 ms</div><div class="stat-box-label">PING REDUKCJA</div></div>
+    </div>
+    <div class="card">
+      <div class="section-label">INFO O URZĄDZENIU</div>
+      <div class="dev-row"><span class="dev-key">Platforma</span><span class="dev-val" id="dev-platform">—</span></div>
+      <div class="dev-row"><span class="dev-key">Rdzenie CPU</span><span class="dev-val" id="dev-cores">—</span></div>
+      <div class="dev-row"><span class="dev-key">Pamięć RAM</span><span class="dev-val" id="dev-mem">—</span></div>
+      <div class="dev-row"><span class="dev-key">Język</span><span class="dev-val" id="dev-lang">—</span></div>
+      <div class="dev-row"><span class="dev-key">Ekran dotykowy</span><span class="dev-val" id="dev-touch">—</span></div>
+      <div class="dev-row"><span class="dev-key">Online</span><span class="dev-val" id="dev-online">—</span></div>
+    </div>
+  </div>
+
+</div><!-- /content -->
+
+<!-- BOTTOM BAR -->
+<div id="bottombar">
+  <span id="bb-bat">🔋 —</span>
+  <span id="bb-brand">GAME BOOST PRO</span>
+  <span id="bb-net">📶 —</span>
+</div>
+</div><!-- /app -->
+
+<script>
+// ── State ──
+let boosted=false, boosting=false, progress=0;
+let batLevel=null, batCharging=false;
+let netType=null, netDl=null, netRtt=null;
+let ipLoaded=false;
+let boostInterval=null;
+
+const iStats={ram:67,cpu:72,temp:54,fps:42};
+const bStats={ram:23,cpu:31,temp:41,fps:120};
+let curStats={...iStats};
+
+// ── Gauge drawing ──
+function drawGauge(id,value,max,color,unit){
+  const svg=document.getElementById(id);
+  const s=78,r=33,circ=2*Math.PI*r;
+  const fill=(value/max)*circ;
+  svg.innerHTML=`
+    <filter id="glow${id}"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <circle cx="${s/2}" cy="${s/2}" r="${r}" fill="none" stroke="#1a2a3a" stroke-width="10"/>
+    <circle cx="${s/2}" cy="${s/2}" r="${r}" fill="none" stroke="${color}" stroke-width="10"
+      stroke-dasharray="${fill} ${circ-fill}" stroke-dashoffset="${circ/4}" stroke-linecap="round"
+      filter="url(#glow${id})" style="transition:stroke-dasharray 1.2s cubic-bezier(0.4,0,0.2,1)"/>
+    <text x="${s/2}" y="${s/2+5}" text-anchor="middle" fill="${color}"
+      font-family="Orbitron,sans-serif" font-size="12" font-weight="bold">${value}${unit||'%'}</text>`;
+}
+
+function updateGauges(){
+  drawGauge('svg-ram', curStats.ram, 100, '#00ffe7','%');
+  drawGauge('svg-cpu', curStats.cpu, 100, '#ff006e','%');
+  drawGauge('svg-temp',curStats.temp,100, '#ffaa00','°');
+  drawGauge('svg-fps', curStats.fps, 120, '#a855f7','');
+}
+
+// ── Tabs ──
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach((b,i)=>{
+    b.classList.toggle('active',['boost','network','monitor'][i]===t);
+  });
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+t).classList.add('active');
+}
+
+// ── Boost logic ──
+function addLog(msg){
+  const box=document.getElementById('log-box');
+  box.style.display='block';
+  const now=new Date().toLocaleTimeString();
+  const div=document.createElement('div');
+  div.className='log-entry';
+  div.innerHTML=`<span class="log-time">${now}</span><span class="log-msg">${msg}</span>`;
+  box.insertBefore(div,box.firstChild);
+  if(box.children.length>8) box.removeChild(box.lastChild);
+}
+
+function handleBoost(){
+  if(boosting) return;
+  if(boosted){ resetBoost(); return; }
+  boosting=true;
+  const btn=document.getElementById('boost-btn');
+  btn.classList.add('boosting');
+  document.getElementById('boost-icon').textContent='⚙️';
+  document.getElementById('boost-text').textContent='BOOST...';
+  // ripple
+  const rip=document.getElementById('ripple');
+  rip.style.display='block';
+  setTimeout(()=>rip.style.display='none',800);
+  // progress
+  document.getElementById('progress-wrap').style.display='block';
+  progress=0;
+  addLog('Inicjowanie boostera…');
+  const steps=[[300,'Czyszczenie pamięci RAM…'],[600,'Zamykanie procesów…'],[900,'Optymalizacja GPU…'],[1200,'Konfiguracja sieci…'],[1500,'Optymalizacja FPS…'],[1800,'Finalizacja…']];
+  steps.forEach(([d,m])=>setTimeout(()=>addLog(m),d));
+  boostInterval=setInterval(()=>{
+    progress+=2;
+    document.getElementById('prog-bar').style.width=progress+'%';
+    document.getElementById('prog-pct').textContent=progress+'%';
+    if(progress>=100){
+      clearInterval(boostInterval);
+      boosting=false; boosted=true;
+      curStats={...bStats};
+      updateGauges(); updateStatBars();
+      btn.classList.remove('boosting');
+      btn.classList.add('active');
+      document.getElementById('boost-icon').textContent='✅';
+      document.getElementById('boost-text').textContent='ZRESETUJ';
+      document.getElementById('badge').textContent='BOOST AKTYWNY';
+      document.getElementById('badge').style.color='var(--neon)';
+      document.getElementById('badge').style.borderColor='var(--neon)';
+      document.getElementById('sg-ram').textContent='2.8 GB';
+      document.getElementById('sg-fps').textContent='+78 FPS';
+      document.getElementById('sg-proc').textContent='12';
+      document.getElementById('sg-ping').textContent='-18 ms';
+      addLog('✅ Boost zakończony sukcesem!');
+    }
+  },40);
+}
+
+function resetBoost(){
+  boosted=false; progress=0;
+  curStats={...iStats};
+  updateGauges(); updateStatBars();
+  const btn=document.getElementById('boost-btn');
+  btn.classList.remove('active','boosting');
+  document.getElementById('boost-icon').textContent='⚡';
+  document.getElementById('boost-text').textContent='BOOST!';
+  document.getElementById('badge').textContent='STANDBY';
+  document.getElementById('badge').style.color='var(--neon2)';
+  document.getElementById('badge').style.borderColor='var(--neon2)';
+  document.getElementById('prog-bar').style.width='0%';
+  document.getElementById('prog-pct').textContent='0%';
+  document.getElementById('progress-wrap').style.display='none';
+  document.getElementById('log-box').style.display='none';
+  document.getElementById('log-box').innerHTML='';
+  document.getElementById('sg-ram').textContent='0 MB';
+  document.getElementById('sg-fps').textContent='+0 FPS';
+  document.getElementById('sg-proc').textContent='0';
+  document.getElementById('sg-ping').textContent='0 ms';
+}
+
+function updateStatBars(){
+  const bars=[
+    ['sb-ram','sb-ram-val',curStats.ram,'#00ffe7'],
+    ['sb-cpu','sb-cpu-val',curStats.cpu,'#ff006e'],
+    ['sb-gpu','sb-gpu-val',Math.round(curStats.cpu*.8),'#a855f7'],
+    ['sb-temp','sb-temp-val',curStats.temp,'#ffaa00'],
+  ];
+  bars.forEach(([bid,vid,val,col])=>{
+    document.getElementById(bid).style.width=val+'%';
+    document.getElementById(vid).textContent=val+'%';
+  });
+}
+
+// ── Badge init ──
+function initBadge(){
+  const b=document.getElementById('badge');
+  b.style.cssText='border-radius:20px;padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:2px;font-family:Orbitron,sans-serif;border:1px solid var(--neon2);color:var(--neon2);background:#ff006e15;box-shadow:0 0 12px #ff006e44';
+}
+
+// ── Battery ──
+function nCol(t){if(!t)return'var(--dim)';if(/5g|4g|wifi/i.test(t))return'#00ffe7';if(/3g/i.test(t))return'#ffaa00';return'#ff006e';}
+function bCol(v){if(v==null)return'var(--dim)';return v>50?'#00ffe7':v>20?'#ffaa00':'#ff006e';}
+
+function initBattery(){
+  if(navigator.getBattery){
+    navigator.getBattery().then(b=>{
+      const u=()=>{
+        batLevel=Math.round(b.level*100);
+        batCharging=b.charging;
+        updateBatteryUI();
+      };
+      u();
+      b.addEventListener('levelchange',u);
+      b.addEventListener('chargingchange',u);
+    }).catch(()=>{});
+  }
+}
+
+function updateBatteryUI(){
+  const col=bCol(batLevel);
+  const ico=batCharging?'⚡':'🔋';
+  const txt=batLevel!=null?`${ico} ${batLevel}%`:'🔋 —';
+  document.getElementById('bb-bat').textContent=txt;
+  document.getElementById('bb-bat').style.color=col;
+  document.getElementById('qb-bat').textContent=batLevel!=null?`${batLevel}%`:'—';
+  document.getElementById('qb-bat').style.color=col;
+  document.getElementById('qb-bat-lbl').textContent=batCharging?'⚡ ŁADOW.':'🔋 BAT.';
+  document.getElementById('ir-batlvl').textContent=batLevel!=null?`${batLevel}%`:'NIEDOSTĘPNE';
+  document.getElementById('ir-batlvl').style.color=col;
+  document.getElementById('ir-batsta').textContent=batLevel!=null?(batCharging?'⚡ ŁADOWANIE':'NA BATERII'):'—';
+  document.getElementById('ir-batsta').style.color=batCharging?'#ffaa00':'var(--neon)';
+  if(batLevel!=null){
+    document.getElementById('bat-bar-bg').style.display='block';
+    const bar=document.getElementById('bat-bar');
+    bar.style.width=batLevel+'%';
+    bar.style.background=`linear-gradient(90deg,${col}88,${col})`;
+    bar.style.boxShadow=`0 0 10px ${col}`;
+  }
+}
+
+// ── Network ──
+function initNetwork(){
+  const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+  if(c){
+    const u=()=>{
+      netType=c.effectiveType||c.type||null;
+      netDl=c.downlink;
+      netRtt=c.rtt;
+      updateNetUI();
+    };
+    u();
+    c.addEventListener('change',u);
+  }
+}
+
+function updateNetUI(){
+  const col=nCol(netType);
+  const t=netType?netType.toUpperCase():'—';
+  document.getElementById('bb-net').textContent='📶 '+t;
+  document.getElementById('bb-net').style.color=col;
+  document.getElementById('qb-net').textContent=t;
+  document.getElementById('qb-net').style.color=col;
+  document.getElementById('ir-nettype').textContent=t;
+  document.getElementById('ir-nettype').style.color=col;
+  document.getElementById('ir-dl').textContent=netDl!=null?`${netDl} Mb/s`:'—';
+  document.getElementById('ir-rtt').textContent=netRtt!=null?`${netRtt} ms`:'—';
+  document.getElementById('ir-rtt').style.color=netRtt<100?'#00ffe7':'#ffaa00';
+  document.getElementById('ir-save').textContent=(navigator.connection?.saveData)?'WŁĄCZONE':'WYŁĄCZONE';
+  document.getElementById('ir-save').style.color=(navigator.connection?.saveData)?'#ffaa00':'var(--neon)';
+}
+
+// ── Public IP ──
+function initIP(){
+  fetch('https://ipapi.co/json/')
+    .then(r=>r.json())
+    .then(d=>setIPData(d))
+    .catch(()=>fetch('https://api.ipify.org?format=json')
+      .then(r=>r.json())
+      .then(d=>setIPData({ip:d.ip}))
+      .catch(()=>setIPData(null))
+    );
+}
+
+function setIPData(d){
+  ipLoaded=true;
+  const ip=d?.ip||'NIEDOSTĘPNE';
+  document.getElementById('ip-display').textContent=ip;
+  document.getElementById('ip-display').classList.remove('loading');
+  document.getElementById('ip-display').style.animationName='none';
+  const loc=[d?.city,d?.region,d?.country_name].filter(Boolean).join(', ')||'Lokalizacja niedostępna';
+  document.getElementById('ip-location').textContent=loc;
+  document.getElementById('ir-ip').textContent=ip;
+  document.getElementById('ir-ip').style.color='var(--neon)';
+  document.getElementById('ir-ip').classList.remove('loading');
+  document.getElementById('ir-ip').style.animationName='none';
+  document.getElementById('ir-city').textContent=d?.city||'—';
+  document.getElementById('ir-country').textContent=d?.country_name||'—';
+  document.getElementById('ir-isp').textContent=d?.org||'—';
+  document.getElementById('ir-tz').textContent=d?.timezone||'—';
+  document.getElementById('ir-asn').textContent=d?.asn||'—';
+  // Quick bar
+  const shortIp=ip.length>14?ip.substring(0,13)+'…':ip;
+  document.getElementById('qb-ip').textContent=shortIp;
+  document.getElementById('qb-ip').classList.remove('loading');
+  document.getElementById('qb-ip').style.color='var(--neon)';
+  document.getElementById('qb-ip').style.animationName='none';
+}
+
+// ── Device info ──
+function initDevice(){
+  document.getElementById('dev-platform').textContent=navigator.platform||'—';
+  document.getElementById('dev-cores').textContent=(navigator.hardwareConcurrency||'—')+' wątki';
+  document.getElementById('dev-mem').textContent=navigator.deviceMemory?navigator.deviceMemory+' GB':'—';
+  document.getElementById('dev-lang').textContent=navigator.language||'—';
+  document.getElementById('dev-touch').textContent=navigator.maxTouchPoints>0?`✅ (${navigator.maxTouchPoints} pkt)`:'❌ Brak';
+  document.getElementById('dev-online').textContent=navigator.onLine?'✅ Tak':'❌ Offline';
+}
+
+// ── Init ──
+initBadge();
+updateGauges();
+updateStatBars();
+initBattery();
+initNetwork();
+initIP();
+initDevice();
+</script>
+</body>
+</html>
